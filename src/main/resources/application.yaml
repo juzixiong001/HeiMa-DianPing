@@ -5,9 +5,9 @@ spring:
     name: hmdp
   datasource:
     driver-class-name: com.mysql.jdbc.Driver
-    url: jdbc:mysql://192.168.100.128:3306/hmdp?useSSL=false&serverTimezone=UTC
+    url: jdbc:mysql://192.168.100.128:3306/hmdp?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
     username: root
-    password: 123
+    password: 1234
   redis:
     host: 192.168.100.128
     port: 6379
