@@ -23,12 +23,23 @@ import java.util.List;
 @RequestMapping("/shop-type")
 public class ShopTypeController {
     @Resource
-    private IShopTypeService typeService;
+    private IShopTypeService shopTypeService;
 
+
+    /**
+     * 查询所有商铺类型
+     * @return
+     */
     @GetMapping("list")
     public Result queryTypeList() {
-        List<ShopType> typeList = typeService
+        /*List<ShopType> typeList = typeService
                 .query().orderByAsc("sort").list();
-        return Result.ok(typeList);
+        return Result.ok(typeList);*/
+        return shopTypeService.queryTypeList();
     }
+
+
+
+
+
 }
