@@ -133,7 +133,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         // 2.获取日期
         LocalDateTime now = LocalDateTime.now();
         // 3.拼接key
-        String keySuffix = now.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+        String keySuffix = now.format(DateTimeFormatter.ofPattern("yyyyMM"));
         String key = USER_SIGN_KEY + userId + keySuffix;
         // 4.获取今天是本月的第几天
         int dayOfMonth = now.getDayOfMonth();

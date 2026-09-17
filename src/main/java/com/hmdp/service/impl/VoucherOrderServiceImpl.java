@@ -170,14 +170,14 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
 
     }
 
-    private void handleVoucherOrder(VoucherOrder voucherOrder) {
+    private void handleVoucherOrder(VoucherOrder voucherOrder) throws InterruptedException {
 
         //1.获取用户
         Long userId = voucherOrder.getUserId();
         // 2.创建锁对象
         RLock redisLock = redissonClient.getLock("lock:order:" + userId);
         // 3.尝试获取锁
-        boolean isLock = redisLock.tryLock();
+        boolean isLock = redisLock.tryLock(5, 30, TimeUnit.SECONDS);
         // 4.判断是否获得锁成功
         if (!isLock) {
             // 获取锁失败，直接返回失败或者重试
@@ -322,26 +322,26 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
         // 5.一人一单逻辑
         // 5.1 用户id
         Long userId = voucherOrder.getUserId();
-        //查询订单
-        int count = query().eq("user_id", userId).eq("voucher_id", voucherOrder.getVoucherId()).count();
-        // 5.2.判断是否存在
-        if (count > 0) {
-            // 用户已经购买过了
-            log.error("用户已经购买过了");
-            return;
-        }
+        Long voucherId = voucherOrder.getVoucherId();
 
-        // 6.扣减库存
-        boolean success = seckillVoucherService.update()
-                .setSql("stock = stock - 1") // set stock = stock - 1
-                .eq("voucher_id", voucherOrder.getVoucherId()).gt("stock", 0) // where id = ? and stock > 0
-                .update();
-        if (!success) {
-            // 扣减失败
-            log.error("库存不足");
-            return;
-        }
-        save(voucherOrder);
+       try{
+           // 1. 扣减库存（乐观锁 WHERE stock > 0）
+           boolean success = seckillVoucherService.update()
+                   .setSql("stock = stock - 1") // set stock = stock - 1
+                   .eq("voucher_id", voucherId).gt("stock", 0) // where id = ? and stock > 0
+                   .update();
+           if (!success) {
+               // 扣减失败
+               log.error("库存不足，userId={}", userId);
+               return;
+           }
+           // 2. 创建订单（唯一索引兜底，重复插入抛 DuplicateKeyException）
+           save(voucherOrder);
+       } catch(org.springframework.dao.DuplicateKeyException e) {
+           // 唯一索引冲突 → 重复下单，事务回滚（含上面的库存扣减）
+           log.warn("重复下单被拦截，userId={}, voucherId={}", userId, voucherId);
+           throw new RuntimeException("不能重复下单", e);
+       }
 
     }
 

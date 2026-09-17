@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static com.hmdp.utils.RedisConstants.CACHE_SHOP_TYPE_LIST;
@@ -62,6 +63,7 @@ public class ShopTypeServiceImpl extends ServiceImpl<ShopTypeMapper, ShopType> i
                 .collect(Collectors.toList());
 
         stringRedisTemplate.opsForList().rightPushAll(CACHE_SHOP_TYPE_LIST, redisValueList);
+        stringRedisTemplate.expire(CACHE_SHOP_TYPE_LIST , 30 , TimeUnit.MINUTES);
         return Result.ok(shopTypeListFromDB);
     }
 }
